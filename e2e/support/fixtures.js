@@ -64,6 +64,7 @@ const test = base.test.extend({
     }
     await app.open();
     await base.expect(app.accountPanel).toContainText(account.email);
+    await app.getStarted(); // every fresh visit starts on the front page
     await use(app);
   },
 });

@@ -37,6 +37,28 @@ test('browser-only reset persists an empty account across reloads', async ({ app
   await assertCleared(app, page);
 });
 
+test('a fresh visit starts on the front page, reloads stay in the app, and the logo goes back', async ({ signedIn: app, page, context }) => {
+  const landing = page.locator('#landing');
+  await expect(landing).toBeHidden(); // signedIn went through Get started
+  await app.reload();
+  await expect(landing).toBeHidden();
+
+  await page.getByRole('button', { name: 'Spend Track front page' }).click();
+  await expect(landing).toBeVisible();
+  await app.reload();
+  await expect(landing).toBeVisible(); // stays on the front page until Get started
+  await app.getStarted();
+  await expect(landing).toBeHidden();
+
+  const fresh = await context.newPage(); // opening the link again, still signed in
+  await fresh.goto('./');
+  await expect(fresh.locator('html')).toHaveAttribute('data-state', 'ready');
+  await expect(fresh.locator('#landing')).toBeVisible();
+  await fresh.getByRole('button', { name: 'Get started' }).click();
+  await expect(fresh.locator('#auth')).toBeHidden();
+  await expect(fresh.locator('#landing')).toBeHidden();
+});
+
 test.describe('mobile @mobile', () => {
   test('tab bar navigation and adding a transaction work on a phone', async ({ signedIn: app, page, account, db }) => {
     await expect(page.locator('.tabbar')).toBeVisible();

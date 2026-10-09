@@ -4,7 +4,8 @@
   // ---------- Config ----------
   const { CATEGORIES, EXPENSE_CATS, DEFAULT_BUDGETS } = window.SpendSeed;
   const STORE_KEY = 'spendtrack.v1';
-  const LANDING_KEY = 'spendtrack.seenLanding';
+  // Set while this tab is inside the app, so a reload stays there; opening the site fresh starts on the front page.
+  const IN_APP_KEY = 'spendtrack.inApp';
   const MAX_REPEATS = 60;
 
   // ---------- Utils ----------
@@ -29,6 +30,10 @@
   const storage = {
     get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* storage unavailable */ } },
+  };
+  const tabStorage = {
+    get(k) { try { return sessionStorage.getItem(k); } catch (_) { return null; } },
+    set(k, v) { try { v ? sessionStorage.setItem(k, v) : sessionStorage.removeItem(k); } catch (_) { /* storage unavailable */ } },
   };
 
   const today = new Date();
@@ -954,13 +959,18 @@
 
   // ---------- Front page ----------
   function showLanding() {
+    tabStorage.set(IN_APP_KEY, null);
+    hideTip();
     $('#landing').classList.remove('hidden');
+    $('#landing').scrollTop = 0;
   }
   $('#getStarted').onclick = () => {
     $('#landing').classList.add('hidden');
     if (mode === 'api' && !user) return showAuth();
-    storage.set(LANDING_KEY, '1');
+    tabStorage.set(IN_APP_KEY, '1');
   };
+  // The logo in the top bar goes back to the front page.
+  $('#homeLink').onclick = () => { closeMenus(); showLanding(); };
 
   // ---------- Log in / create account ----------
   let authMode = 'login';
@@ -1028,6 +1038,7 @@
       $('#aPassword').value = '';
       $('#aPassword2').value = '';
       hideAuth();
+      tabStorage.set(IN_APP_KEY, '1');
       renderAccount();
       render();
       toast(`${authMode === 'signup' ? 'Welcome' : 'Welcome back'}, ${user.name.split(' ')[0]}`);
@@ -1041,6 +1052,7 @@
     setMenu(false);
     await api('POST', 'auth/logout', {}).catch(() => {});
     setToken(null);
+    tabStorage.set(IN_APP_KEY, null);
     authMode = 'login';
     showAuth();
   };
@@ -1069,7 +1081,7 @@
     if (mode === 'local') Object.assign(state, loadLocal());
     renderAccount();
     if (mode === 'api' && !user) return showLanding();
-    if (mode === 'local' && !storage.get(LANDING_KEY)) showLanding();
+    if (!tabStorage.get(IN_APP_KEY)) showLanding();
     render();
   }
 
