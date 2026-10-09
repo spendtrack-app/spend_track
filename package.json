@@ -18,8 +18,8 @@
     "e2e": "playwright test",
     "doctor": "node scripts/doctor.js",
     "test:all": "npm test && npm run smoke && npm run e2e",
-    "smoke:pages": "node scripts/smoke.js --pages https://shubin123.github.io/spend_track/",
-    "e2e:pages": "E2E_BASE_URL=https://shubin123.github.io/spend_track/ playwright test",
+    "smoke:pages": "node scripts/smoke.js --pages https://spendtrack-app.github.io/spend_track/",
+    "e2e:pages": "E2E_BASE_URL=https://spendtrack-app.github.io/spend_track/ playwright test",
     "pages:api": "bash scripts/pages-api.sh"
   },
   "dependencies": {

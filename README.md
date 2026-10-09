@@ -1,9 +1,9 @@
 # Spend Track
 
-A high-fidelity spending tracker with real accounts. The Node/Express API stores users, sessions, transactions, and budgets in MySQL (AWS RDS).
+A high-fidelity spending tracker with real accounts. The Node/Express API stores users, sessions, transactions, and budgets in MySQL.
 
-- **Static demo (no login, data stays in your browser):**https://spendtrack-app.github.io/spend_track/
-- **Full app with accounts:** run the server locally (see below), or expose it to the Pages site with `npm run tunnel` (see [Connecting GitHub Pages](#connecting-github-pages))
+- **Live site:** https://spendtrack-app.github.io/spend_track/. Accounts work while the team server is running (see [The live server](#the-live-server-mac--tailscale-funnel)). When it's offline, the site says so and runs in browser-only mode, with data kept in the browser.
+- **Run it yourself:** set up a server locally (see [Setup](#setup)) and open http://localhost:3000.
 
 ## Features
 
@@ -22,10 +22,10 @@ A high-fidelity spending tracker with real accounts. The Node/Express API stores
 
 ## Setup
 
-Requires Node 21+ (`.nvmrc` pins 22) and a MySQL 8 server: AWS RDS, or a local one for development.
+Requires Node 21+ (`.nvmrc` pins 22) and a MySQL server: CI tests against MySQL 8.4, and the live server runs Homebrew MySQL 26.7. It can be local or hosted (for example AWS RDS).
 
 ```sh
-git clone https://github.com/Shubin123/spend_track.git && cd spend_track
+git clone https://github.com/spendtrack-app/spend_track.git && cd spend_track
 npm run setup     # prompts for DB host and admin login, then does everything below
 npm start         # http://localhost:3000
 npm run doctor    # verify the install at any time
@@ -64,13 +64,148 @@ Use `SPEND_TRACK_ENV_FILE=/path/to/.env` to keep the config elsewhere. Real envi
 - The app never runs as the RDS master user. Keep the master password in a password manager or the macOS Keychain, not in the `.env` file.
 - To rotate the app and migrator passwords: `DB_ADMIN_USER=admin DB_ADMIN_PASSWORD=… node scripts/create-db-users.js`. To keep the password out of shell history, read it from the Keychain: `DB_ADMIN_PASSWORD="$(security find-generic-password -s 'Spend Track RDS master (…)' -w)"`.
 - If the master credential is ever committed or shared, rotate it in AWS (RDS → Modify → master password), then rotate the app users as above.
+- `npm run setup` briefly writes the admin password into `.env` until the restricted users exist. To keep it off disk entirely, follow the steps in [The live server](#the-live-server-mac--tailscale-funnel) instead.
+
+## The live server (Mac + Tailscale Funnel)
+
+The live site's API currently runs on a team member's Mac, at no cost:
+
+| Part | What | Where |
+| --- | --- | --- |
+| Website | GitHub Pages, published from `main` | https://spendtrack-app.github.io/spend_track/ |
+| API | `server/index.js`, started by launchd | `127.0.0.1:3000` on the Mac |
+| Database | Homebrew MySQL, listening on `127.0.0.1` only | `spend_track` on the Mac |
+| Public address | [Tailscale Funnel](https://tailscale.com/kb/1223/funnel) (free, permanent HTTPS) | https://kuro.tail5c9ccb.ts.net |
+| Backups | Daily `mysqldump` at 03:00, keeps 7 | `~/Library/Application Support/SpendTrack/backups/` |
+
+**Limitation:** accounts work only while the Mac is awake. Keep it plugged in with "Prevent automatic sleeping" on. The server, Funnel, and backups all come back on their own after a restart.
+
+### Setting it up on a Mac
+
+Needs Homebrew MySQL (`brew install mysql && brew services start mysql`), the [Tailscale app](https://tailscale.com/download/mac) logged in, and Node 22+.
+
+**1. Save the MySQL root password in the Keychain.** It's used only in memory, never written to a file.
+
+```sh
+security add-generic-password -a root -s 'Spend Track MySQL root' -w
+```
+
+**2. Write a config with no secrets in it:**
+
+```sh
+mkdir -p ~/.config/spend_track && chmod 700 ~/.config/spend_track
+( umask 077; cat > ~/.config/spend_track/.env <<'EOF'
+DB_HOST='127.0.0.1'
+DB_PORT='3306'
+DB_NAME='spend_track'
+DB_SSL='off'
+PORT='3000'
+HOST='127.0.0.1'
+ALLOWED_ORIGINS='https://spendtrack-app.github.io'
+EOF
+)
+```
+
+- `HOST=127.0.0.1` keeps the server off the local network. Funnel connects through `127.0.0.1`.
+- `ALLOWED_ORIGINS` is required. The code's default is still the old `https://shubin123.github.io`, so without it, logins from the live site fail.
+
+**3. Create the database and the restricted users**, with the root password in memory only:
+
+```sh
+ROOTPW="$(security find-generic-password -s 'Spend Track MySQL root' -w)"
+DB_USER=root DB_PASSWORD="$ROOTPW" node scripts/migrate.js          # creates the database and tables
+DB_USER=root DB_PASSWORD="$ROOTPW" node scripts/create-db-users.js  # adds spend_track_app / spend_track_migrator to .env
+unset ROOTPW
+npm run doctor
+```
+
+**4. Start the server at login and restart it on crash.** Create `~/Library/LaunchAgents/app.spendtrack.server.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>app.spendtrack.server</string>
+  <key>ProgramArguments</key>
+  <array><string>/usr/local/bin/node</string><string>/path/to/spend_track/server/index.js</string></array>
+  <key>WorkingDirectory</key><string>/path/to/spend_track</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/you/Library/Logs/spend-track/server.log</string>
+  <key>StandardErrorPath</key><string>/Users/you/Library/Logs/spend-track/server.log</string>
+</dict>
+</plist>
+```
+
+```sh
+mkdir -p ~/Library/Logs/spend-track
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/app.spendtrack.server.plist
+curl -s http://127.0.0.1:3000/api/health      # {"status":"ok","db":"up",...}
+```
+
+**5. Publish it with Funnel** and point the Pages site at it. This is a one-time step, because the address never changes:
+
+```sh
+TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
+$TS funnel --bg 3000        # the first time, it prints a link to enable Funnel for your tailnet
+$TS funnel status           # shows https://<machine>.<tailnet>.ts.net
+npm run pages:api -- https://<machine>.<tailnet>.ts.net --publish
+```
+
+**6. Daily backups.** Save this as `~/Library/Application Support/SpendTrack/backup.sh` (`chmod 700`). It uses the migrator login from `.env`, never root:
+
+```sh
+#!/bin/bash
+set -euo pipefail
+ENV_FILE="$HOME/.config/spend_track/.env"
+OUT="$HOME/Library/Application Support/SpendTrack/backups"
+get() { sed -n "s/^$1='\(.*\)'\$/\1/p" "$ENV_FILE"; }
+umask 077; mkdir -p "$OUT"
+export MYSQL_PWD="$(get DB_MIGRATE_PASSWORD)"
+FILE="$OUT/spend_track-$(date +%Y-%m-%d).sql.gz"
+/usr/local/bin/mysqldump --single-transaction --set-gtid-purged=OFF --no-tablespaces --routines --triggers \
+  --skip-masking-policies -h 127.0.0.1 -u "$(get DB_MIGRATE_USER)" "$(get DB_NAME)" | gzip > "$FILE.tmp"
+mv "$FILE.tmp" "$FILE"
+ls -1t "$OUT"/spend_track-*.sql.gz | tail -n +8 | while read -r old; do rm -f "$old"; done
+```
+
+Then add a launchd job `app.spendtrack.backup` with `StartCalendarInterval` set to 03:00. If the Mac is asleep at 03:00, launchd runs it on wake. To restore a backup:
+
+```sh
+gunzip -c ~/Library/Application\ Support/SpendTrack/backups/spend_track-YYYY-MM-DD.sql.gz \
+  | MYSQL_PWD="$(security find-generic-password -s 'Spend Track MySQL root' -w)" mysql -u root -h 127.0.0.1 spend_track
+```
+
+### Day-to-day
+
+| Task | Command |
+| --- | --- |
+| Is it up? | `npm run doctor`, or `curl https://<machine>.<tailnet>.ts.net/api/health` |
+| Logs | `tail -f ~/Library/Logs/spend-track/server.log` (backups: `backup.log`) |
+| Deploy new code | `git pull && npm run migrate && launchctl kickstart -k gui/$(id -u)/app.spendtrack.server` (the service runs from this working copy) |
+| Take it offline | `$TS funnel --https=443 off`. Run `$TS funnel --bg 3000` to bring it back. |
+| Stop the server | `launchctl bootout gui/$(id -u)/app.spendtrack.server` |
+| Run a backup now | `launchctl kickstart gui/$(id -u)/app.spendtrack.backup` |
+
+### Security notes
+
+- Only Funnel is reachable from outside. The API listens on `127.0.0.1:3000`, and MySQL's `bind_address` and `mysqlx_bind_address` are `127.0.0.1`.
+- The server runs as `spend_track_app` (`SELECT/INSERT/UPDATE/DELETE` on `spend_track.*`). Backups and migrations use `spend_track_migrator`. The root password stays in the Keychain.
+- Funnel sets `X-Forwarded-For` to the visitor's real IP and replaces any value the client sent. Its proxy connects from `127.0.0.1`, and the default `TRUST_PROXY=loopback` trusts only that, so the sign-in rate limit applies per visitor and can't be dodged with a fake header.
+- Only `ALLOWED_ORIGINS` (the Pages site) gets CORS access. Other sites are refused.
+
+**Known quirk:** on a device logged into the same tailnet, the `.ts.net` name resolves to the private Tailscale IP. Chrome then blocks the Pages site from calling it ("local network access"), and the site falls back to browser-only mode. Visitors outside the tailnet aren't affected. On the server's own Mac, use http://localhost:3000, allow Chrome's local-network prompt, or turn off "Use Tailscale DNS".
+
+To move off the Mac later, run the same app on a cloud server with [the Ubuntu installer](#deploying-to-an-ubuntu-server). Then point the Pages site at the new address with `npm run pages:api`.
 
 ## Deploying to an Ubuntu server
 
 One command sets up Ubuntu 22.04+ or Debian 12+. It installs Node 22, a hardened systemd service, least-privilege DB users, and (with `DOMAIN`) Caddy with automatic HTTPS:
 
 ```sh
-git clone https://github.com/Shubin123/spend_track.git && cd spend_track
+git clone https://github.com/spendtrack-app/spend_track.git && cd spend_track
 sudo DB_HOST=your-db.rds.amazonaws.com DB_USER=admin DB_PASSWORD=… \
      DOMAIN=api.example.com bash scripts/install-ubuntu.sh
 ```
@@ -98,7 +233,9 @@ CI runs this installer on a clean Ubuntu 24.04 machine with real systemd on ever
 
 ## Connecting GitHub Pages
 
-GitHub Pages only hosts static files, so the Pages site reaches the API through a [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) running on this machine:
+GitHub Pages only hosts static files, so `api-config.js` tells the Pages site where the API is. The live site uses the permanent Funnel address from [The live server](#the-live-server-mac--tailscale-funnel), set once with `npm run pages:api -- <url> --publish`.
+
+For a quick temporary test without Tailscale, use a [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) instead:
 
 ```sh
 npm start                        # terminal 1
@@ -107,7 +244,7 @@ npm run tunnel -- --publish      # terminal 2: writes the URL to api-config.js, 
 
 - The quick-tunnel URL changes on every run, so re-run with `--publish` after each restart. Pages picks up the change within a few minutes.
 - While the tunnel or server is down, the Pages site says so and falls back to browser-only mode.
-- Only origins in `ALLOWED_ORIGINS` (default `https://shubin123.github.io`) get CORS access. Those requests authenticate with a bearer token kept in `localStorage`, and the session cookie is ignored for them. Same-origin use (`http://localhost:3000`) keeps the HttpOnly cookie.
+- Only origins in `ALLOWED_ORIGINS` get CORS access. Set it to `https://spendtrack-app.github.io`, because the code's default is still the old `https://shubin123.github.io`. Those requests authenticate with a bearer token kept in `localStorage`, and the session cookie is ignored for them. Same-origin use (`http://localhost:3000`) keeps the HttpOnly cookie.
 
 ## Database changes
 
@@ -125,11 +262,11 @@ Three layers, each with one job:
 
 | Layer | Command | What it proves | Speed |
 | --- | --- | --- | --- |
-| **Integration** | `npm test` | Every API rule against a real MySQL: auth and sessions, validation boundaries, optimistic concurrency, per-user isolation, CSRF/CORS/bearer tokens, rate limiting, headers, and which files are served | ~83 tests in ~10 s |
-| **E2E** | `npm run e2e` | Real user journeys in Chromium (desktop and mobile), with each result checked against what MySQL stored: sign-up/in/out, add/edit/delete/undo, conflict handling, failed saves, filters, months, CSV export, KPIs, budgets, reset, theme, offline fallback | ~22 tests in ~15 s |
+| **Integration** | `npm test` | Every API rule against a real MySQL: auth and sessions, validation boundaries, optimistic concurrency, per-user isolation, CSRF/CORS/bearer tokens, rate limiting, headers, and which files are served | ~91 tests in ~10 s |
+| **E2E** | `npm run e2e` | Real user journeys in Chromium (desktop and mobile), with each result checked against what MySQL stored: sign-up/in/out, add/edit/delete/undo, conflict handling, failed saves, filters, months, CSV export, KPIs, budgets, reset, theme, offline fallback | ~24 tests in ~15 s |
 | **Smoke** | `npm run smoke` | A deployment is alive and its critical path works. Non-destructive, stops at the first failure, reports timings | ~3 s |
 
-Against the live GitHub Pages site (through the tunnel): `npm run smoke:pages` checks the whole chain (Pages → `api-config.js` → tunnel → API → MySQL), and `npm run e2e:pages` runs the browser suite there.
+Against the live GitHub Pages site: `npm run smoke:pages` checks the whole chain (Pages → `api-config.js` → tunnel → API → MySQL), and `npm run e2e:pages` runs the browser suite there.
 
 How the tests stay fast and reliable:
 - **Test-data factory** (`test/support/factory.js`, shared by integration and e2e). It creates users, sessions and transactions directly in MySQL, so each test sets up exactly the state it needs in milliseconds, and only the auth tests go through sign-up. Everything it creates is deleted afterwards; test accounts use `*@example.test`.
@@ -158,7 +295,7 @@ Smoke options: `npm run smoke -- <url>` for any server. Set `SMOKE_EMAIL`/`SMOKE
 
 ```
 index.html, styles.css, app.js   Front end (works standalone on GitHub Pages in browser-only mode)
-api-config.js                    API URL for the Pages copy (written by scripts/tunnel.sh)
+api-config.js                    API URL for the Pages copy (written by pages-api.sh or tunnel.sh)
 seed.js                          Categories + sample data, shared by browser and server
 images/                          Category icons (<category>.png), tinted with each category's color
 server/                          Express app: config, db pool, auth, data API
