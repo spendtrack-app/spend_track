@@ -22,6 +22,8 @@ class App {
 
   // The front page comes first when signed out; Get started leads to the log-in screen.
   async getStarted() { await this.page.getByRole('button', { name: 'Get started' }).click(); }
+  // The log-in screen starts with a choice of method; this opens the email form.
+  async chooseEmail() { await this.page.getByRole('button', { name: 'Continue with email' }).click(); }
 
   async openMenu() { await this.page.getByRole('button', { name: 'Account' }).click(); }
   async signOut() { await this.openMenu(); await this.page.getByRole('menuitem', { name: 'Log out' }).click(); }
@@ -61,6 +63,7 @@ class App {
   }
 
   async signIn(email, password) {
+    if (!(await this.page.locator('#aEmail').isVisible())) await this.chooseEmail();
     await this.page.locator('#aEmail').fill(email);
     await this.page.locator('#aPassword').fill(password);
     await this.page.locator('#authSubmit').click();

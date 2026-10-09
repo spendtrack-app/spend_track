@@ -7,7 +7,7 @@ A high-fidelity spending tracker with real accounts. The Node/Express API stores
 
 ## Features
 
-- **Accounts**: sign up, sign in, and sign out. Passwords are hashed with bcrypt (cost 12). Sessions use an opaque token in an `HttpOnly`, `SameSite=Lax` cookie, and only its SHA-256 is stored in MySQL.
+- **Accounts**: log in with Google, GitHub, or email and password, and sign out. Passwords are hashed with bcrypt (cost 12). Sessions use an opaque token in an `HttpOnly`, `SameSite=Lax` cookie, and only its SHA-256 is stored in MySQL.
 - **Front page**: welcome screen with a Get started button that leads to log in, or straight into the demo
 - **Log in / create account**: separate screens, with a repeat-password check on sign-up
 - **Overview**: switch between day, week, month, and year. Shows the period total, the change from the previous period, a category pie chart, and a ranking of categories or merchants
@@ -246,6 +246,44 @@ npm run tunnel -- --publish      # terminal 2: writes the URL to api-config.js, 
 - While the tunnel or server is down, the Pages site says so and falls back to browser-only mode.
 - Only origins in `ALLOWED_ORIGINS` get CORS access. The default is `https://spendtrack-app.github.io`, the live Pages site. Those requests authenticate with a bearer token kept in `localStorage`, and the session cookie is ignored for them. Same-origin use (`http://localhost:3000`) keeps the HttpOnly cookie.
 
+## Sign in with Google or GitHub
+
+The log-in screen offers **Continue with Google**, **Continue with GitHub**, and **Continue with email**. A provider's button is active only when the server has its keys. Otherwise the button is switched off with a note.
+
+### Turning it on
+
+Register one free OAuth app per provider. The callback URL is this API's public address plus `/api/auth/oauth/<provider>/callback`. For the live server that's `https://kuro.tail5c9ccb.ts.net/...`.
+
+1. **Google**, at [Google Cloud console](https://console.cloud.google.com/):
+   - Create a project.
+   - Set up the **OAuth consent screen** (External; scopes `openid`, `email`, `profile`; publish it, or add testers while it's in "Testing").
+   - Open **Credentials → Create credentials → OAuth client ID → Web application**.
+   - **Authorized redirect URI:** `https://kuro.tail5c9ccb.ts.net/api/auth/oauth/google/callback`
+2. **GitHub**, at **Settings → Developer settings → OAuth Apps → New OAuth App**:
+   - **Homepage URL:** `https://spendtrack-app.github.io/spend_track/`
+   - **Authorization callback URL:** `https://kuro.tail5c9ccb.ts.net/api/auth/oauth/github/callback`
+   - Generate a client secret.
+3. Add the keys to the server's `~/.config/spend_track/.env`. Keys never go in the repo.
+   ```
+   PUBLIC_URL='https://kuro.tail5c9ccb.ts.net'
+   GOOGLE_CLIENT_ID='…'
+   GOOGLE_CLIENT_SECRET='…'
+   GITHUB_CLIENT_ID='…'
+   GITHUB_CLIENT_SECRET='…'
+   ```
+4. Run `npm run migrate`, which adds the `oauth_accounts` table and allows password-less users. Then restart the server: `launchctl kickstart -k gui/$(id -u)/app.spendtrack.server`.
+
+### How it works
+
+- **Flow:** standard OAuth 2.0 authorization code flow with PKCE (`server/oauth.js`). A random `state` is tied to an `HttpOnly` cookie, so a sign-in can't be started in one browser and finished in another.
+- **Where the browser lands:** the callback never puts a session token in a URL. It sends the browser back with a one-time code in the fragment (`#login_code=…`), valid for 60 seconds and usable once. The page exchanges that code for a normal session: a cookie for the same-origin app, a bearer token for the GitHub Pages copy.
+- **Allowed return addresses:** the Pages site (`ALLOWED_ORIGINS`), this API itself, or `localhost`. Anything else falls back to the API's own page.
+- **Accounts:**
+  - A provider account is used only if the provider says its email is **verified**.
+  - The first sign-in creates an account with no password, or links to an existing account with the same email.
+  - Accounts without a password can't log in with a password.
+- **Tests:** `test/oauth.test.js` runs the whole flow against a fake provider. It covers PKCE, state checks, account creation and linking, single-use codes, safe returns, bearer tokens, and failures.
+
 ## Database changes
 
 Migrations live in `migrations/NNN_name.sql` and are tracked in a `schema_migrations` table with checksums.
@@ -262,8 +300,8 @@ Three layers, each with one job:
 
 | Layer | Command | What it proves | Speed |
 | --- | --- | --- | --- |
-| **Integration** | `npm test` | Every API rule against a real MySQL: auth and sessions, validation boundaries, optimistic concurrency, per-user isolation, CSRF/CORS/bearer tokens, rate limiting, headers, and which files are served | ~91 tests in ~10 s |
-| **E2E** | `npm run e2e` | Real user journeys in Chromium (desktop and mobile), with each result checked against what MySQL stored: sign-up/in/out, add/edit/delete/undo, conflict handling, failed saves, filters, months, CSV export, KPIs, budgets, reset, theme, offline fallback | ~24 tests in ~15 s |
+| **Integration** | `npm test` | Every API rule against a real MySQL: auth and sessions, validation boundaries, optimistic concurrency, per-user isolation, CSRF/CORS/bearer tokens, rate limiting, headers, and which files are served | ~102 tests in ~10 s |
+| **E2E** | `npm run e2e` | Real user journeys in Chromium (desktop and mobile), with each result checked against what MySQL stored: sign-up/in/out, add/edit/delete/undo, conflict handling, failed saves, filters, months, CSV export, KPIs, budgets, reset, theme, offline fallback | ~29 tests in ~15 s |
 | **Smoke** | `npm run smoke` | A deployment is alive and its critical path works. Non-destructive, stops at the first failure, reports timings | ~3 s |
 
 Against the live GitHub Pages site: `npm run smoke:pages` checks the whole chain (Pages → `api-config.js` → tunnel → API → MySQL), and `npm run e2e:pages` runs the browser suite there.
@@ -298,7 +336,7 @@ index.html, styles.css, app.js   Front end (works standalone on GitHub Pages in 
 api-config.js                    API URL for the Pages copy (written by pages-api.sh or tunnel.sh)
 seed.js                          Categories + sample data, shared by browser and server
 images/                          Category icons (<category>.png), tinted with each category's color
-server/                          Express app: config, db pool, auth, data API
+server/                          Express app: config, db pool, auth, Google/GitHub sign-in (oauth.js), data API
 migrations/                      Versioned SQL schema
 scripts/                         setup.sh, install-ubuntu.sh, doctor.js, migrate.js, create-user.js, create-db-users.js,
                                  tunnel.sh, pages-api.sh, smoke.js

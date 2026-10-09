@@ -102,8 +102,10 @@ router.post('/login', limiter, async (req, res) => {
   const password = String(req.body?.password || '');
   const [rows] = await getPool().query('SELECT id, name, email, password_hash FROM users WHERE email = ?', [email]);
   const user = rows[0];
-  const ok = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
-  if (!user || !ok) return res.status(401).json({ error: 'Incorrect email or password.' });
+  // Accounts created with Google/GitHub have no password; compare against the dummy hash
+  // so they fail the same way (and take the same time) as a wrong password.
+  const ok = await bcrypt.compare(password, user?.password_hash || DUMMY_HASH);
+  if (!user || !user.password_hash || !ok) return res.status(401).json({ error: 'Incorrect email or password.' });
   const pool = getPool();
   const token = await createSession(pool, user.id);
   setSessionCookie(res, token);
@@ -119,4 +121,4 @@ router.post('/logout', async (req, res) => {
 
 router.get('/me', requireUser, (req, res) => res.json({ user: publicUser(req.user) }));
 
-module.exports = { router, loadSession, requireUser };
+module.exports = { router, loadSession, requireUser, readCookie, createSession, setSessionCookie, publicUser };

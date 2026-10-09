@@ -60,4 +60,12 @@ module.exports = {
   // Secure cookies need HTTPS; defaults to on in production. COOKIE_SECURE=false only for plain-HTTP testing.
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production',
   sessionDays: Number(process.env.SESSION_TTL_DAYS || 30),
+  // Public HTTPS address of this API (e.g. https://kuro.tail5c9ccb.ts.net). OAuth redirect URIs
+  // are built from it; without it they use the address the request came in on.
+  publicUrl: (process.env.PUBLIC_URL || '').replace(/\/+$/, ''),
+  // Sign in with Google / GitHub. A provider is offered only when both its values are set.
+  oauth: {
+    google: { clientId: process.env.GOOGLE_CLIENT_ID || '', clientSecret: process.env.GOOGLE_CLIENT_SECRET || '' },
+    github: { clientId: process.env.GITHUB_CLIENT_ID || '', clientSecret: process.env.GITHUB_CLIENT_SECRET || '' },
+  },
 };

@@ -7,6 +7,7 @@ test.describe('sign up', () => {
     const email = factory.track(factory.uniqueEmail('e2e'));
     await app.open();
     await app.getStarted();
+    await app.chooseEmail();
     await page.getByRole('button', { name: 'Create one' }).click();
     await page.locator('#aName').fill('Grace Hopper');
     await page.locator('#aEmail').fill(email);
@@ -25,6 +26,7 @@ test.describe('sign up', () => {
     const email = factory.track(factory.uniqueEmail('e2e'));
     await app.open();
     await app.getStarted();
+    await app.chooseEmail();
     await page.getByRole('button', { name: 'Create one' }).click();
     await page.locator('#aName').fill('Empty Account');
     await page.locator('#aEmail').fill(email);
@@ -42,6 +44,7 @@ test.describe('sign up', () => {
   test('shows server validation errors and keeps the form usable', async ({ app, page, account }) => {
     await app.open();
     await app.getStarted();
+    await app.chooseEmail();
     await page.getByRole('button', { name: 'Create one' }).click();
     await page.locator('#aName').fill('Dup');
     await page.locator('#aEmail').fill(account.email);
@@ -93,5 +96,44 @@ test.describe('sign in and out', () => {
     await app.signIn(account.email, account.password);
     await expect(app.authScreen).toBeHidden();
     await expect(page.locator('#totals')).not.toBeEmpty();
+  });
+});
+
+test.describe('log-in options', () => {
+  test('Log in on the front page offers Google, GitHub, and email', async ({ app, page }) => {
+    await app.open();
+    await page.getByRole('button', { name: 'Log in', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Log in to Spend Track' })).toBeVisible();
+    // The e2e server has no Google/GitHub keys, so those options are shown but switched off.
+    await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Continue with GitHub' })).toBeDisabled();
+    await expect(page.locator('#providersNote')).toHaveText("Google and GitHub sign-in aren't set up on this server yet.");
+
+    await app.chooseEmail();
+    await expect(page.locator('#aEmail')).toBeFocused();
+    await page.getByRole('button', { name: 'Other ways to log in' }).click();
+    await expect(page.getByRole('heading', { name: 'Log in to Spend Track' })).toBeVisible();
+    await page.getByRole('button', { name: 'Back to the front page' }).click();
+    await expect(page.locator('#landing')).toBeVisible();
+  });
+
+  test('a Google/GitHub sign-in that fails comes back with a clear message', async ({ app, page }) => {
+    await page.goto('./#login_error=cancelled');
+    await app.ready();
+    await expect(app.authError).toHaveText('Sign-in was cancelled.');
+    expect(new URL(page.url()).hash, 'the result is removed from the address bar').toBe('');
+
+    await page.goto(`./?again#login_code=${'x'.repeat(43)}`); // a code the server never issued
+    await app.ready();
+    await expect(app.authError).toHaveText('That sign-in expired. Please try again.');
+  });
+
+  test('when signed in, the front page button opens the app instead', async ({ signedIn: app, page }) => {
+    await page.getByRole('button', { name: 'Spend Track front page' }).click();
+    const button = page.locator('#landingLogin');
+    await expect(button).toHaveText('Open the app');
+    await button.click();
+    await expect(page.locator('#landing')).toBeHidden();
+    await expect(app.authScreen).toBeHidden();
   });
 });

@@ -4,6 +4,7 @@ const express = require('express');
 const config = require('./config');
 const { getPool } = require('./db');
 const auth = require('./auth');
+const oauth = require('./oauth');
 const data = require('./data');
 
 const ROOT = path.join(__dirname, '..');
@@ -70,6 +71,7 @@ app.use('/api', (req, res, next) => {
 app.use('/api', express.json({ limit: '32kb' }));
 app.use('/api', auth.loadSession);
 app.use('/api/auth', auth.router);
+app.use('/api/auth', oauth.router);
 app.use('/api', auth.requireUser, data.router);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found.' }));
 

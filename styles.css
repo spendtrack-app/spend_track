@@ -408,8 +408,11 @@ dialog label.switch { flex-direction: row; align-items: center; gap: 10px; curso
 .lp-intro { font-size: 17px; color: var(--muted); max-width: 455px; margin: 0 0 14px; }
 .lp-audience { font-size: 14px; color: var(--muted); max-width: 410px; margin: 0 0 28px; }
 .lp-actions { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
-.lp-text-link { font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: none; }
-.lp-text-link:hover { color: var(--accent-text); text-decoration: underline; text-underline-offset: 4px; }
+.lp-text-link {
+  display: inline-flex; align-items: center; padding: 13px 25px; border: 1px solid var(--ink); border-radius: 12px;
+  font-size: 16px; font-weight: 600; color: var(--ink); text-decoration: none;
+}
+.lp-text-link:hover { color: var(--accent-text); border-color: var(--accent-text); }
 .lp-preview { margin: 0; min-width: 0; position: relative; }
 .lp-preview::before { content: ""; position: absolute; inset: 40px -18px 50px; border-radius: 50%; background: var(--primary-soft); z-index: -1; }
 .lp-window { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--pop); overflow: hidden; transform: rotate(-2deg); }
@@ -475,8 +478,21 @@ dialog label.switch { flex-direction: row; align-items: center; gap: 10px; curso
 .auth { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: var(--paper); overflow-y: auto; }
 .auth-card { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 32px; }
 .auth-brand { margin-bottom: 28px; }
+/* Arrow before the logo: the logo on this screen goes back to the front page. */
+.auth-brand .back-arrow { width: 20px; height: 20px; margin-right: -2px; color: var(--muted); transition: transform .15s, color .15s; }
+.auth-brand:hover .back-arrow { color: var(--ink); transform: translateX(-3px); }
 .auth-card h2 { font-size: 26px; letter-spacing: -.03em; }
-.auth-card > p { margin: 6px 0 22px; }
+.auth-sub { margin: 6px 0 22px; }
+.auth-options { display: flex; flex-direction: column; gap: 10px; }
+.auth-options button.full { gap: 10px; font-weight: 600; }
+.oauth-logo { width: 18px; height: 18px; stroke: none; }
+.auth-divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 4px 0; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.auth-note { margin: 14px 0 0; text-align: center; }
+.auth-offline { margin-top: 16px; padding: 14px; border-radius: 12px; background: var(--sunk); font-size: 14px; }
+.auth-offline p { margin: 0 0 12px; color: var(--muted); }
+.auth-other { gap: 4px; font-size: 14px; margin-bottom: 14px; }
+.auth-other svg { width: 16px; height: 16px; }
 .auth-card label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 13px; margin-bottom: 14px; }
 .auth-card label.check { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; font-size: 14px; }
 .auth-card label.check input { width: auto; accent-color: var(--primary); }

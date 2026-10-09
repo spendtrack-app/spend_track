@@ -17,6 +17,18 @@ test('with the API unreachable the site runs in browser-only mode and keeps data
   await expect(app.row('Local Only Kiosk')).toContainText('$3.21');
 });
 
+test('with the API unreachable, Log in explains that only the demo is available', async ({ app, page }) => {
+  await page.route(/\/api\//, route => route.abort('connectionrefused'));
+  await app.open();
+  await page.getByRole('button', { name: 'Log in', exact: true }).click();
+  await expect(page.locator('#authOffline')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Continue with email' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Try the demo' }).click();
+  await expect(app.authScreen).toBeHidden();
+  await expect(page.locator('#totals')).not.toBeEmpty();
+});
+
 test('browser-only reset persists an empty account across reloads', async ({ app, page }) => {
   await page.route(/\/api\//, route => route.abort('connectionrefused'));
   await app.open();

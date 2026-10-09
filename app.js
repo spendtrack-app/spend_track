@@ -964,10 +964,20 @@
     $('#landing').classList.remove('hidden');
     $('#landing').scrollTop = 0;
   }
-  $('#getStarted').onclick = () => {
+  function enterApp() {
     $('#landing').classList.add('hidden');
-    if (mode === 'api' && !user) return showAuth();
     tabStorage.set(IN_APP_KEY, '1');
+  }
+  $('#getStarted').onclick = () => {
+    if (mode === 'api' && !user) return showAuth();
+    enterApp();
+  };
+  // Signed in: opens the app. Signed out: the log-in options. Server offline: the same
+  // screen, explaining that only the demo is available.
+  $('#landingLogin').onclick = () => {
+    if (mode === 'api' && user) return enterApp();
+    if (mode === 'api') return showAuth();
+    openAuth();
   };
   // The logo in the top bar goes back to the front page.
   $('#homeLink').onclick = () => { closeMenus(); showLanding(); };
@@ -986,23 +996,59 @@
     $('#aPassword').autocomplete = signup ? 'new-password' : 'current-password';
     $('#authError').classList.add('hidden');
   }
+  // Which sign-in providers the server offers (GET /api/auth/providers).
+  let providers = { google: false, github: false };
+  const PROVIDER_NAMES = { google: 'Google', github: 'GitHub' };
+
+  function renderAuthOptions() {
+    const online = mode === 'api';
+    $$('.oauth-btn').forEach(b => { b.disabled = !(online && providers[b.dataset.provider]); });
+    $('#chooseEmail').disabled = !online;
+    $('#authOffline').classList.toggle('hidden', online);
+    const missing = Object.keys(PROVIDER_NAMES).filter(p => !providers[p]).map(p => PROVIDER_NAMES[p]);
+    $('#providersNote').textContent = `${missing.join(' and ')} sign-in ${missing.length > 1 ? "aren't" : "isn't"} set up on this server yet.`;
+    $('#providersNote').classList.toggle('hidden', !online || !missing.length);
+  }
+  // The log-in screen has two steps: choose how (Google, GitHub, email), then the email form.
+  function setAuthStep(step) {
+    $('#authChoose').classList.toggle('hidden', step !== 'choose');
+    $('#authEmailStep').classList.toggle('hidden', step !== 'email');
+    if (step === 'email') $(authMode === 'signup' ? '#aName' : '#aEmail').focus();
+    else ($('.oauth-btn:not(:disabled)') || $('#chooseEmail:not(:disabled)') || $('#useDemo')).focus();
+  }
+  function openAuth(message, step = 'choose') {
+    setAuthMode(authMode);
+    renderAuthOptions();
+    if (message) { $('#authError').textContent = message; $('#authError').classList.remove('hidden'); }
+    $('#landing').classList.add('hidden');
+    $('#auth').classList.remove('hidden');
+    setAuthStep(step);
+  }
+  // Signed out (or the session ended): clear account data and show the log-in options.
   function showAuth(message) {
     user = null;
     state.txs = [];
     [confirmDialog, txDialog, budgetDialog].forEach(d => d.open && d.close());
     setMenu(false);
     renderAccount();
-    setAuthMode(authMode);
-    if (message) { $('#authError').textContent = message; $('#authError').classList.remove('hidden'); }
-    $('#landing').classList.add('hidden');
-    $('#auth').classList.remove('hidden');
-    $(authMode === 'signup' ? '#aName' : '#aEmail').focus();
+    openAuth(message);
   }
   const hideAuth = () => $('#auth').classList.add('hidden');
+
+  $('#chooseEmail').onclick = () => { $('#authError').classList.add('hidden'); setAuthStep('email'); };
+  $('#authOther').onclick = () => { $('#authError').classList.add('hidden'); setAuthStep('choose'); };
+  $('#useDemo').onclick = () => { hideAuth(); enterApp(); };
+  // Google / GitHub: the server redirects to the provider and back to this page with
+  // #login_code=… (or #login_error=…), which boot() picks up.
+  $$('.oauth-btn').forEach(b => b.onclick = () => {
+    const path = `api/auth/oauth/${b.dataset.provider}/start?return=${encodeURIComponent(location.origin + location.pathname)}`;
+    location.assign(apiBase ? `${apiBase}/${path}` : new URL(path, location.href).href);
+  });
 
   function renderAccount() {
     const el = $('#account');
     const signedIn = mode === 'api' && user;
+    $('#landingLogin').textContent = signedIn ? 'Open the app' : 'Log in';
     $('#logoutBtn').classList.toggle('hidden', !signedIn);
     if (signedIn) {
       const initials = user.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -1071,16 +1117,45 @@
     return true;
   }
 
+  const LOGIN_ERRORS = {
+    cancelled: 'Sign-in was cancelled.',
+    no_verified_email: 'That account doesn’t have a verified email address, so it can’t be used to sign in.',
+    expired: 'That sign-in took too long or was finished in a different browser. Please try again.',
+    failed: 'Couldn’t sign you in. Please try again.',
+  };
+  // Reads (and removes from the address bar) the result of a Google/GitHub sign-in.
+  function takeLoginResult() {
+    const m = /^#login_(code|error)=([A-Za-z0-9_-]{1,64})$/.exec(location.hash);
+    if (!m) return null;
+    history.replaceState(null, '', location.pathname + location.search);
+    return m[1] === 'code' ? { code: m[2] } : { error: LOGIN_ERRORS[m[2]] || LOGIN_ERRORS.failed };
+  }
+
   // Use the API server if one is reachable; otherwise stay in browser-only mode.
   async function boot() {
+    let login = takeLoginResult();
     let found = await probe('').catch(() => false);
     if (!found && REMOTE_API) {
       found = await probe(REMOTE_API).catch(() => false);
       if (!found) toast('The sync server is offline, so this is browser-only mode.');
     }
     if (mode === 'local') Object.assign(state, loadLocal());
+    if (mode === 'api') providers = await api('GET', 'auth/providers').catch(() => providers);
+    if (mode === 'api' && login?.code) {
+      try {
+        user = (await api('POST', 'auth/oauth/exchange', { code: login.code })).user;
+        await loadRemote();
+        tabStorage.set(IN_APP_KEY, '1');
+        renderAccount();
+        render();
+        toast(`Welcome, ${user.name.split(' ')[0]}`);
+        return;
+      } catch (err) {
+        login = { error: err.message };
+      }
+    }
     renderAccount();
-    if (mode === 'api' && !user) return showLanding();
+    if (mode === 'api' && !user) return login?.error ? showAuth(login.error) : showLanding();
     if (!tabStorage.get(IN_APP_KEY)) showLanding();
     render();
   }
