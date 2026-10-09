@@ -2,7 +2,7 @@
 
 A high-fidelity spending tracker with real accounts. The Node/Express API stores users, sessions, transactions, and budgets in MySQL (AWS RDS).
 
-- **Static demo (no login, data stays in your browser):** https://shubin123.github.io/spend_track/
+- **Static demo (no login, data stays in your browser):**https://shubin123.github.io/spend_track/](https://spendtrack-app.github.io/spend_track/
 - **Full app with accounts:** run the server locally (see below), or expose it to the Pages site with `npm run tunnel` (see [Connecting GitHub Pages](#connecting-github-pages))
 
 ## Features
