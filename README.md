@@ -107,7 +107,7 @@ EOF
 ```
 
 - `HOST=127.0.0.1` keeps the server off the local network. Funnel connects through `127.0.0.1`.
-- `ALLOWED_ORIGINS` is required. The code's default is still the old `https://shubin123.github.io`, so without it, logins from the live site fail.
+- `ALLOWED_ORIGINS` is the site allowed to call the API. `https://spendtrack-app.github.io` is also the default, but setting it explicitly documents it.
 
 **3. Create the database and the restricted users**, with the root password in memory only:
 
@@ -244,7 +244,7 @@ npm run tunnel -- --publish      # terminal 2: writes the URL to api-config.js, 
 
 - The quick-tunnel URL changes on every run, so re-run with `--publish` after each restart. Pages picks up the change within a few minutes.
 - While the tunnel or server is down, the Pages site says so and falls back to browser-only mode.
-- Only origins in `ALLOWED_ORIGINS` get CORS access. Set it to `https://spendtrack-app.github.io`, because the code's default is still the old `https://shubin123.github.io`. Those requests authenticate with a bearer token kept in `localStorage`, and the session cookie is ignored for them. Same-origin use (`http://localhost:3000`) keeps the HttpOnly cookie.
+- Only origins in `ALLOWED_ORIGINS` get CORS access. The default is `https://spendtrack-app.github.io`, the live Pages site. Those requests authenticate with a bearer token kept in `localStorage`, and the session cookie is ignored for them. Same-origin use (`http://localhost:3000`) keeps the HttpOnly cookie.
 
 ## Database changes
 

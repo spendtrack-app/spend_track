@@ -5,7 +5,7 @@
 #   npm run pages:api -- https://api.example.com --publish   # ...then commit + push it
 #   npm run pages:api -- ""                                  # back to browser-only mode
 #
-# The API must allow the Pages origin (ALLOWED_ORIGINS, default https://shubin123.github.io).
+# The API must allow the Pages origin (ALLOWED_ORIGINS, default https://spendtrack-app.github.io).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

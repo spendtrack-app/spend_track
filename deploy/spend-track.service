@@ -1,7 +1,7 @@
 # systemd unit for Spend Track. Installed by scripts/install-ubuntu.sh.
 [Unit]
 Description=Spend Track API and web app
-Documentation=https://github.com/Shubin123/spend_track
+Documentation=https://github.com/spendtrack-app/spend_track
 After=network-online.target mysql.service
 Wants=network-online.target
 

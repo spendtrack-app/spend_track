@@ -100,7 +100,7 @@ describe('cross-origin API for GitHub Pages', { concurrency: true }, () => {
     assert.equal(ok.headers.get('access-control-allow-credentials'), null);
     assert.match(ok.headers.get('vary'), /Origin/);
 
-    for (const origin of ['https://evil.example', 'https://shubin123.github.io.evil.example', 'http://shubin123.github.io']) {
+    for (const origin of ['https://evil.example', 'https://spendtrack-app.github.io.evil.example', 'http://spendtrack-app.github.io', 'https://shubin123.github.io']) {
       assert.equal((await preflight(origin)).headers.get('access-control-allow-origin'), null, origin);
     }
   });

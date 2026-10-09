@@ -6,7 +6,7 @@
 //
 //   npm run smoke                                        # local server on $PORT (cookie auth)
 //   npm run smoke -- http://host:3000                    # any server
-//   npm run smoke -- --pages https://shubin123.github.io/spend_track/
+//   npm run smoke -- --pages https://spendtrack-app.github.io/spend_track/
 //        # the whole deployed chain: Pages site -> api-config.js -> tunnel -> API -> MySQL,
 //        # authenticated as the Pages origin with a bearer token
 //

@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const app = require('../../server/index');
 const factory = require('./factory');
 
-const PAGES_ORIGIN = 'https://shubin123.github.io';
+const PAGES_ORIGIN = 'https://spendtrack-app.github.io';
 
 // Registers before/after hooks for one test file: starts the app on a random port,
 // then deletes every user the file created and closes the pool.

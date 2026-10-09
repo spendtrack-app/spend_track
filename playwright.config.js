@@ -1,7 +1,7 @@
 'use strict';
 // Browser end-to-end tests.
 //   npm run e2e                                                        # local server (started if needed)
-//   E2E_BASE_URL=https://shubin123.github.io/spend_track/ npm run e2e  # live GitHub Pages via the tunnel
+//   E2E_BASE_URL=https://spendtrack-app.github.io/spend_track/ npm run e2e  # live GitHub Pages site
 const { defineConfig, devices } = require('@playwright/test');
 
 const external = process.env.E2E_BASE_URL;

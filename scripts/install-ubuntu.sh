@@ -15,7 +15,7 @@
 #                             HTTP on PORT, for testing only.
 #   PORT                      App port (default 3000).
 #   ALLOWED_ORIGINS           Sites allowed to call the API cross-origin
-#                             (default https://shubin123.github.io, the GitHub Pages front end).
+#                             (default https://spendtrack-app.github.io, the GitHub Pages front end).
 #   ST_EMAIL ST_PASSWORD      Optionally create an app account.
 #
 # Layout: code /opt/spend_track (root-owned, read-only to the app), config
@@ -56,7 +56,7 @@ command -v apt-get >/dev/null || die "This installer supports Ubuntu/Debian (apt
 FIRST_INSTALL=y; [[ -f $ENV_FILE ]] && FIRST_INSTALL=n
 DOMAIN="${DOMAIN-$(env_value SPEND_TRACK_DOMAIN)}"
 PORT="${PORT:-$(env_value PORT)}"; PORT="${PORT:-3000}"
-ALLOWED_ORIGINS="${ALLOWED_ORIGINS-$(env_value ALLOWED_ORIGINS)}"; ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-https://shubin123.github.io}"
+ALLOWED_ORIGINS="${ALLOWED_ORIGINS-$(env_value ALLOWED_ORIGINS)}"; ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-https://spendtrack-app.github.io}"
 if [[ $FIRST_INSTALL == y ]]; then
   [[ -n "${DB_HOST:-}" && -n "${DB_PASSWORD:-}" ]] || die "First install needs DB_HOST, DB_USER and DB_PASSWORD (MySQL admin login)."
 fi

@@ -54,7 +54,7 @@ module.exports = {
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY ?? 'loopback'),
   // Other sites allowed to call the API (e.g. the GitHub Pages front end through a tunnel).
   // They authenticate with a bearer token, never the cookie.
-  allowedOrigins: (process.env.ALLOWED_ORIGINS ?? 'https://shubin123.github.io')
+  allowedOrigins: (process.env.ALLOWED_ORIGINS ?? 'https://spendtrack-app.github.io')
     .split(',').map(s => s.trim()).filter(Boolean),
   production: process.env.NODE_ENV === 'production',
   // Secure cookies need HTTPS; defaults to on in production. COOKIE_SECURE=false only for plain-HTTP testing.
