@@ -156,6 +156,11 @@ Smoke options: `npm run smoke -- <url>` for any server. Set `SMOKE_EMAIL`/`SMOKE
 
 ## Layout
 
+The separate [landing website](landing/README.md) lives in `landing/`. It introduces
+the app and lists desktop download availability, with no build step or backend
+dependency. When the repository root is published to GitHub Pages, it is available
+at `/spend_track/landing/`; the existing app remains at `/spend_track/`.
+
 ```
 index.html, styles.css, app.js   Front end (works standalone on GitHub Pages in browser-only mode)
 api-config.js                    API URL for the Pages copy (written by scripts/tunnel.sh)
