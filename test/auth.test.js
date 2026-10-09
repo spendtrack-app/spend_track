@@ -179,3 +179,44 @@ describe('rate limiting', { concurrency: true }, () => {
     assert.ok(results.every(r => r.status === 200));
   });
 });
+
+describe('deleting an account', { concurrency: true }, () => {
+  const counts = async userId => ({
+    users: (await f.row('SELECT COUNT(*) AS n FROM users WHERE id = ?', [userId])).n,
+    sessions: (await f.row('SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?', [userId])).n,
+    transactions: (await f.row('SELECT COUNT(*) AS n FROM transactions WHERE user_id = ?', [userId])).n,
+    budgets: (await f.row('SELECT COUNT(*) AS n FROM budgets WHERE user_id = ?', [userId])).n,
+    oauth: (await f.row('SELECT COUNT(*) AS n FROM oauth_accounts WHERE user_id = ?', [userId])).n,
+  });
+
+  it('removes the account and everything that belongs to it, and ends the session', async () => {
+    const { user, c } = await signedIn(ctx);
+    await f.createTx(user.id);
+    await f.createSession(user.id); // a second device
+    await f.row('INSERT INTO oauth_accounts (user_id, provider, provider_user_id, email) VALUES (?, ?, ?, ?)', [user.id, 'google', `g-${user.id}`, user.email]);
+    const other = await signedIn(ctx);
+    await f.createTx(other.user.id);
+    assert.ok((await counts(user.id)).transactions > 0);
+
+    const r = await c.del('/api/auth/account');
+    assert.equal(r.status, 200);
+    assert.match(r.setCookie, /^st_session=;/, 'the session cookie is cleared');
+    assert.deepEqual(await counts(user.id), { users: 0, sessions: 0, transactions: 0, budgets: 0, oauth: 0 });
+    assert.equal((await c.get('/api/auth/me')).status, 401);
+    assert.equal((await counts(other.user.id)).transactions, 1, 'other accounts are untouched');
+  });
+
+  it('requires a session, and works for the GitHub Pages copy with its bearer token', async () => {
+    assert.equal((await client(ctx).del('/api/auth/account')).status, 401);
+    const { user, c } = await signedIn(ctx, { origin: 'https://spendtrack-app.github.io' });
+    assert.equal((await c.del('/api/auth/account')).status, 200);
+    assert.equal((await counts(user.id)).users, 0);
+  });
+
+  it('refuses a cross-site request', async () => {
+    const { user, token } = await signedIn(ctx);
+    const r = await client(ctx, { token }).del('/api/auth/account', { Origin: 'https://evil.example' });
+    assert.equal(r.status, 403);
+    assert.equal((await counts(user.id)).users, 1);
+  });
+});

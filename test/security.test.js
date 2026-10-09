@@ -23,7 +23,7 @@ describe('security headers', { concurrency: true }, () => {
 
 describe('static files', { concurrency: true }, () => {
   it('serves exactly the front-end files with correct content types', async () => {
-    const expected = { '/': 'text/html', '/index.html': 'text/html', '/app.js': 'javascript', '/seed.js': 'javascript', '/api-config.js': 'javascript', '/styles.css': 'text/css' };
+    const expected = { '/': 'text/html', '/index.html': 'text/html', '/privacy.html': 'text/html', '/app.js': 'javascript', '/seed.js': 'javascript', '/api-config.js': 'javascript', '/styles.css': 'text/css' };
     for (const [path, type] of Object.entries(expected)) {
       const r = await raw(path);
       assert.equal(r.status, 200, path);

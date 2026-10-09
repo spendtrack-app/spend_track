@@ -137,3 +137,39 @@ test.describe('log-in options', () => {
     await expect(app.authScreen).toBeHidden();
   });
 });
+
+test.describe('account deletion and privacy', () => {
+  test('Delete account asks first, then removes everything and returns to the front page', async ({ signedIn: app, page, account, db }) => {
+    await db.createTx(account.id, { merchant: 'Gone Soon' });
+    const left = async table => (await db.row(`SELECT COUNT(*) AS n FROM ${table} WHERE ${table === 'users' ? 'id' : 'user_id'} = ?`, [account.id])).n;
+
+    await app.openMenu();
+    await page.getByRole('menuitem', { name: 'Delete account' }).click();
+    await expect(page.locator('#confirmDialog')).toContainText('Delete your account?');
+    await page.locator('#confirmDialog').getByRole('button', { name: 'Cancel' }).click();
+    expect(await left('users')).toBe(1);
+
+    await app.openMenu();
+    await page.getByRole('menuitem', { name: 'Delete account' }).click();
+    await page.locator('#confirmDialog').getByRole('button', { name: 'Delete account' }).click();
+    await expect(app.toast).toHaveText('Your account and its data were deleted.');
+    await expect(page.locator('#landing')).toBeVisible();
+    for (const table of ['users', 'transactions', 'budgets', 'sessions']) expect(await left(table), table).toBe(0);
+
+    await app.reload();
+    await expect(page.locator('#landingLogin')).toHaveText('Log in'); // signed out for good
+  });
+
+  test('the front page links to the privacy policy, which links back', async ({ app, page }) => {
+    await app.open();
+    await page.getByRole('link', { name: 'Privacy policy' }).click();
+    await expect(page).toHaveURL(/\/privacy\.html$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy policy');
+    for (const name of ['What we store', "We don't sell or share your information", 'Signing in with Google or GitHub', 'Deleting your account']) {
+      await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
+    }
+    await page.getByRole('link', { name: 'Back to Spend Track' }).click();
+    await app.ready();
+    await expect(page.locator('#landing')).toBeVisible();
+  });
+});

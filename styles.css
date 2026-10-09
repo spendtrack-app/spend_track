@@ -157,6 +157,7 @@ input:focus-visible, select:focus-visible { outline: none; }
 /* Brand mark: the project icon plus "Spend Track." */
 .brand { display: inline-flex; align-items: center; gap: 10px; padding: 0; font-weight: 750; font-size: 19px; letter-spacing: -.04em; color: var(--ink); white-space: nowrap; }
 .brand-icon { width: 32px; height: 32px; border-radius: 9px; flex: none; }
+a.brand { text-decoration: none; }
 .brand-dot { color: var(--accent-text); margin-left: -10px; }
 
 /* Top bar */
@@ -400,6 +401,7 @@ dialog label.switch { flex-direction: row; align-items: center; gap: 10px; curso
 .lp-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 80px; }
 .lp-nav-link { font-size: 14px; font-weight: 600; text-decoration: none; color: var(--ink); border: 1px solid var(--ink); border-radius: 9px; padding: 8px 18px; }
 .lp-nav-link:hover { color: var(--accent-text); border-color: var(--accent-text); }
+.lp-nav-link { white-space: nowrap; }
 .lp-eyebrow { color: var(--accent-text); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; margin: 0 0 20px; }
 .lp-eyebrow span { font-size: 20px; vertical-align: middle; margin-right: 6px; }
 .lp-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding-block: 72px; }
@@ -469,10 +471,26 @@ dialog label.switch { flex-direction: row; align-items: center; gap: 10px; curso
 .lp-footer .brand { font-size: 16px; }
 .lp-footer .brand-icon { width: 26px; height: 26px; }
 .lp-footer p { margin: 0; font-size: 13px; color: var(--muted); }
+.lp-footer-link, .auth-legal a { color: var(--muted); font-size: 13px; text-underline-offset: 3px; }
+.lp-footer-link:hover, .auth-legal a:hover { color: var(--accent-text); }
+.auth-legal { margin: 18px 0 0; text-align: center; }
 @media (max-width: 1050px) {
   .lp-hero { gap: 36px; }
   .lp-feature-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Privacy page (privacy.html), reusing the front page's header and footer */
+.doc { width: min(720px, calc(100% - 64px)); padding-block: 56px 72px; }
+.doc h1 { font-size: clamp(36px, 5vw, 52px); line-height: 1.1; letter-spacing: -.04em; font-weight: 650; margin: 0 0 8px; }
+.doc-updated { color: var(--muted); font-size: 14px; margin: 0 0 28px; }
+.doc-lede { font-size: 18px; margin: 0 0 8px; }
+.doc h2 { font-size: 22px; letter-spacing: -.02em; font-weight: 650; margin: 40px 0 12px; }
+.doc p, .doc li { color: var(--muted); line-height: 1.65; }
+.doc .doc-lede, .doc b { color: var(--ink); }
+.doc b { font-weight: 600; }
+.doc ul, .doc ol { padding-left: 22px; margin: 0 0 12px; }
+.doc li { margin-bottom: 8px; }
+.doc a { color: var(--accent-text); text-underline-offset: 3px; }
 
 /* Log in / create account */
 .auth { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: var(--paper); overflow-y: auto; }
@@ -529,6 +547,9 @@ dialog label.switch { flex-direction: row; align-items: center; gap: 10px; curso
 @media (max-width: 560px) {
   .landing h1 { font-size: 44px; letter-spacing: -.04em; }
   .lp-header-inner { min-height: 68px; }
+  .doc-page .lp-nav-link { padding: 7px 12px; font-size: 13px; }
+  .doc-page .lp-header .brand { font-size: 17px; }
+  .doc-page .lp-header .brand-icon { width: 28px; height: 28px; }
   .lp-feature-grid { grid-template-columns: 1fr; }
   .lp-strip .lp-container { flex-direction: column; align-items: flex-start; gap: 8px; }
   .lp-window-body { padding: 16px; }

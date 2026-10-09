@@ -121,4 +121,12 @@ router.post('/logout', async (req, res) => {
 
 router.get('/me', requireUser, (req, res) => res.json({ user: publicUser(req.user) }));
 
+// Permanently deletes the signed-in account. Its sessions, transactions, budgets, and
+// Google/GitHub links are removed with it (ON DELETE CASCADE).
+router.delete('/account', requireUser, async (req, res) => {
+  await getPool().query('DELETE FROM users WHERE id = ?', [req.user.id]);
+  res.clearCookie(COOKIE, { path: '/' });
+  res.json({ ok: true });
+});
+
 module.exports = { router, loadSession, requireUser, readCookie, createSession, setSessionCookie, publicUser };

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy policy · Spend Track</title>
+  <meta name="description" content="What Spend Track stores, what it doesn't do with it, and how to delete your account." />
+  <link rel="icon" type="image/svg+xml" href="images/app-icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    // Same theme as the app (saved by app.js); "light"/"dark" are from the old two-theme toggle.
+    try {
+      const saved = localStorage.getItem('spendtrack.theme');
+      const theme = { light: 'honey', dark: 'twilight' }[saved] || saved;
+      document.documentElement.setAttribute('data-theme', ['honey', 'pastel', 'twilight'].includes(theme)
+        ? theme : (matchMedia('(prefers-color-scheme: dark)').matches ? 'twilight' : 'honey'));
+    } catch (_) { /* storage unavailable: default theme */ }
+  </script>
+</head>
+<body class="doc-page">
+  <header class="lp-header">
+    <div class="lp-container lp-header-inner">
+      <a class="brand" href="./" aria-label="Spend Track front page"><img class="brand-icon" src="images/app-icon.svg" width="32" height="32" alt="">Spend Track<span class="brand-dot" aria-hidden="true">.</span></a>
+      <a class="lp-nav-link" href="./">Back to Spend Track</a>
+    </div>
+  </header>
+
+  <main class="doc lp-container">
+    <h1>Privacy policy</h1>
+    <p class="doc-updated">Last updated October 8, 2026</p>
+    <p class="doc-lede">Spend Track keeps only what it needs to run your account: your name, your email address, and the entries and budgets you add. We don't sell or share it, and we don't use it for ads.</p>
+
+    <h2>What we store</h2>
+    <ul>
+      <li><b>Your account:</b> your name and email address. If you sign up with email, we also store a scrambled (bcrypt-hashed) form of your password, never the password itself.</li>
+      <li><b>Your money data:</b> the transactions you enter (amount, merchant, category, date, and any note) and your monthly budgets.</li>
+      <li><b>Keeping you signed in:</b> a record of each signed-in session, stored only in hashed form. If you use Google or GitHub, we also store which one and that account's ID number, so we recognise you next time.</li>
+    </ul>
+    <p>We don't collect your location, contacts, or bank details, and Spend Track has no analytics, advertising, or tracking tools.</p>
+
+    <h2>We don't sell or share your information</h2>
+    <p>Your information is used only to run Spend Track for you. We don't sell, rent, or share it with anyone, and we don't use it for advertising.</p>
+
+    <h2>Signing in with Google or GitHub</h2>
+    <ul>
+      <li>We ask only for basic profile access, and we use just two things from it: your <b>name</b> and your <b>verified email address</b> (plus the account's ID number, to recognise you next time).</li>
+      <li>We never see your Google or GitHub password, and we don't read or change anything else in those accounts. That includes your email, files, repositories, and contacts.</li>
+      <li>You can remove Spend Track's access at any time: in your Google Account under <b>Security → Your connections to third-party apps &amp; services</b>, or on GitHub under <b>Settings → Applications → Authorized OAuth Apps</b>.</li>
+    </ul>
+
+    <h2>Where your information is kept</h2>
+    <ul>
+      <li>Account data is kept in the Spend Track database on our team's server, which can only be reached through the app. We make a backup once a day and keep backups for 7 days.</li>
+      <li>The website is hosted on GitHub Pages and loads its font from Google Fonts. Connections to our server pass through Tailscale. Like any web service, these providers can see technical details such as your IP address. They don't receive your account or money data.</li>
+      <li>In demo mode (without an account), your entries stay in your own browser and never reach our server.</li>
+    </ul>
+
+    <h2>Cookies and browser storage</h2>
+    <p>We use a session cookie (or, on this GitHub Pages site, a sign-in token saved in your browser) to keep you logged in, and a short-lived cookie that protects Google and GitHub sign-in. Your browser also remembers your theme. There are no tracking or advertising cookies.</p>
+
+    <h2 id="delete">Deleting your account</h2>
+    <ol>
+      <li>Log in to Spend Track.</li>
+      <li>Open the account menu: the round button with your initials in the top-right corner.</li>
+      <li>Choose <b>Delete account</b>, then confirm.</li>
+    </ol>
+    <p>This immediately and permanently deletes your account, all of your transactions and budgets, your sessions, and any Google or GitHub link. Copies in our daily backups are gone within 7 days. If you used demo mode, choose <b>Reset data</b> in the same menu, or clear this site's data in your browser.</p>
+
+    <h2>Changes and questions</h2>
+    <p>If this policy changes, we'll update it here and change the date at the top. For questions, contact the Spend Track team through our <a href="https://github.com/spendtrack-app/spend_track">GitHub page</a>. Please don't post personal information in public issues.</p>
+  </main>
+
+  <footer class="lp-footer lp-container">
+    <span class="brand"><img class="brand-icon" src="images/app-icon.svg" width="32" height="32" alt="">Spend Track<span class="brand-dot" aria-hidden="true">.</span></span>
+    <p>A clearer picture of your everyday spending.</p>
+  </footer>
+</body>
+</html>

@@ -9,7 +9,7 @@ const data = require('./data');
 
 const ROOT = path.join(__dirname, '..');
 // Only the front-end files are served; server code and config are never exposed.
-const STATIC_FILES = ['index.html', 'styles.css', 'app.js', 'seed.js', 'api-config.js'];
+const STATIC_FILES = ['index.html', 'privacy.html', 'styles.css', 'app.js', 'seed.js', 'api-config.js'];
 
 const app = express();
 app.disable('x-powered-by');

@@ -7,7 +7,8 @@ A high-fidelity spending tracker with real accounts. The Node/Express API stores
 
 ## Features
 
-- **Accounts**: log in with Google, GitHub, or email and password, and sign out. Passwords are hashed with bcrypt (cost 12). Sessions use an opaque token in an `HttpOnly`, `SameSite=Lax` cookie, and only its SHA-256 is stored in MySQL.
+- **Accounts**: log in with Google, GitHub, or email and password, sign out, or delete the account and all its data from the account menu. Passwords are hashed with bcrypt (cost 12). Sessions use an opaque token in an `HttpOnly`, `SameSite=Lax` cookie, and only its SHA-256 is stored in MySQL.
+- **Privacy policy**: `privacy.html`, linked from the front page and the log-in screen. It covers what's stored, that nothing is sold or shared, what Google/GitHub sign-in reads, and how to delete an account.
 - **Front page**: welcome screen with a Get started button that leads to log in, or straight into the demo
 - **Log in / create account**: separate screens, with a repeat-password check on sign-up
 - **Overview**: switch between day, week, month, and year. Shows the period total, the change from the previous period, a category pie chart, and a ranking of categories or merchants
@@ -333,6 +334,7 @@ Smoke options: `npm run smoke -- <url>` for any server. Set `SMOKE_EMAIL`/`SMOKE
 
 ```
 index.html, styles.css, app.js   Front end (works standalone on GitHub Pages in browser-only mode)
+privacy.html                     Privacy policy page
 api-config.js                    API URL for the Pages copy (written by pages-api.sh or tunnel.sh)
 seed.js                          Categories + sample data, shared by browser and server
 images/                          Category icons (<category>.png), tinted with each category's color

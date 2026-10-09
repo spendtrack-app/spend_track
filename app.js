@@ -1050,6 +1050,7 @@
     const signedIn = mode === 'api' && user;
     $('#landingLogin').textContent = signedIn ? 'Open the app' : 'Log in';
     $('#logoutBtn').classList.toggle('hidden', !signedIn);
+    $('#deleteAccount').classList.toggle('hidden', !signedIn);
     if (signedIn) {
       const initials = user.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
       avatarBtn.textContent = initials;
@@ -1101,6 +1102,30 @@
     tabStorage.set(IN_APP_KEY, null);
     authMode = 'login';
     showAuth();
+  };
+
+  // Permanently deletes the account and everything in it, after confirmation.
+  $('#deleteAccount').onclick = async () => {
+    setMenu(false);
+    const ok = await confirmChange({
+      title: 'Delete your account?',
+      text: 'This permanently deletes your account, all of your entries and budgets, and any Google or GitHub sign-in link. It can’t be undone.',
+      ok: 'Delete account',
+    });
+    if (!ok) return;
+    try {
+      await api('DELETE', 'auth/account');
+    } catch (err) {
+      if (err.status !== 401) toast(err.message);
+      return;
+    }
+    setToken(null);
+    user = null;
+    Object.assign(state, { txs: [], budgets: {} });
+    authMode = 'login';
+    renderAccount();
+    showLanding();
+    toast('Your account and its data were deleted.');
   };
 
   // Returns true if an API answers at `base` ('' = same origin) and switches to it.
