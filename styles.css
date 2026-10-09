@@ -154,7 +154,7 @@ input:focus, select:focus { border-color: var(--accent-text); box-shadow: 0 0 0 
 input:focus-visible, select:focus-visible { outline: none; }
 .select-sm { width: auto; padding: 6px 10px; font-size: 13px; }
 
-/* Brand mark: the project icon plus "Spend Track." (same as landing/) */
+/* Brand mark: the project icon plus "Spend Track." */
 .brand { display: inline-flex; align-items: center; gap: 10px; padding: 0; font-weight: 750; font-size: 19px; letter-spacing: -.04em; color: var(--ink); white-space: nowrap; }
 .brand-icon { width: 32px; height: 32px; border-radius: 9px; flex: none; }
 .brand-dot { color: var(--accent-text); margin-left: -10px; }
@@ -393,7 +393,7 @@ dialog label.switch { flex-direction: row; align-items: center; gap: 10px; curso
 .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .toast button { color: var(--primary-soft); font-weight: 600; text-decoration: underline; }
 
-/* Front page: same layout and copy as landing/, with colors from the active theme */
+/* Front page: colors come from the active theme */
 .landing { position: fixed; inset: 0; z-index: 45; overflow-y: auto; background: var(--paper); scroll-behavior: smooth; scroll-padding-top: 96px; }
 .lp-container { width: min(1160px, calc(100% - 64px)); margin-inline: auto; }
 .lp-header { position: sticky; top: 0; z-index: 2; background: var(--paper); border-bottom: 1px solid var(--line); }
